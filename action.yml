@@ -1,0 +1,69 @@
+name: "Cleanbev Asset Check"
+description: "Finds (and optionally deletes) unused assets in a Flutter/Dart project using cleanbev"
+
+inputs:
+  assets-path:
+    description: "Path to the assets directory to scan (relative to working-directory)"
+    required: false
+    default: "assets"
+  working-directory:
+    description: "Directory containing pubspec.yaml"
+    required: false
+    default: "."
+  blocking:
+    description: "Fail the job when unused assets are found"
+    required: false
+    default: "false"
+
+outputs:
+  unused-count:
+    description: "Number of unused assets detected"
+    value: ${{ steps.scan.outputs.unused-count }}
+
+runs:
+  using: "composite"
+  steps:
+    - name: Install Flutter
+      uses: subosito/flutter-action@v2
+      with:
+        channel: stable
+        cache: true
+      
+    - name: Install dependencies
+      shell: bash
+      run: flutter pub get
+
+    - name: Activate cleanbev
+      shell: bash
+      run: dart pub global activate cleanbev
+
+    - name: Get dependencies
+      shell: bash
+      working-directory: ${{ inputs.working-directory }}
+      run: dart pub get
+
+    - name: Run cleanbev scan
+      id: scan
+      shell: bash
+      working-directory: ${{ inputs.working-directory }}
+      run: |
+        set -o pipefail
+
+        OUTPUT_FILE=$(mktemp)
+        dart pub global run cleanbev --assets-path "${{ inputs.assets-path }}" --accept-all | tee "$OUTPUT_FILE"
+
+        COUNT=$(grep -c "has been deleted" "$OUTPUT_FILE" || true)
+        echo "unused-count=$COUNT" >> "$GITHUB_OUTPUT"
+
+    - name: Block when unused assets are found
+      if: ${{ inputs.blocking == 'true' && steps.scan.outputs.unused-count != '0' && steps.scan.outputs.unused-count != '' }}
+      shell: bash
+      run: |
+        COUNT="${{ steps.scan.outputs.unused-count }}"
+        echo "Detected $COUNT unused assets, please run cleanbev locally and push changes again" >&2
+        exit 1
+
+    - name: Summary
+      shell: bash
+      run: | 
+        echo "Unused assets detected: ${{ steps.scan.outputs.unused-count }}"
