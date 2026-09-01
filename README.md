@@ -19,7 +19,7 @@ A powerful command-line tool for Dart and Flutter projects that automatically de
 
 ### As a GitHub Action
 
-[![Marketplace](https://img.shields.io/badge/Marketplace-cleanbev--action-blue?logo=github&logoColor=white)](https://github.com/marketplace/actions/cleanbev-action)
+[![Marketplace](https://img.shields.io/badge/Marketplace-cleanbev--action-blue?logo=github&logoColor=white)](https://github.com/marketplace/actions/cleanbev-asset-check)
 
 Add an automated unused-asset check to your CI. Drop this into a workflow to scan on every pull request:
 
